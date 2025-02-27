@@ -1,4 +1,19 @@
 Variable 1,Variable 2,Correlation,Missing Values (Var 1),Missing Values (Var 2)
+Month_Dt,Year,0.9986268335831079,0,0
+Month_Dt,CS Production (Mnt),0.9276827255632238,0,1
+Month_Dt,Cummulative FAI growth (%),0.8263651839240053,0,4
+Month_Dt,"ACSU 
+(Mnt)",0.9100422208083018,0,3
+Month_Dt,Stocks of iron ore at China's seaport (Mt.),0.8883888811320211,0,15
+Month_Dt,YTD Growth rate of  Investment  (Fixed asset investment),0.8132089537348,0,23
+Month_Dt,Floor space under construction (y-o-y),0.8737447786267422,0,79
+Year,CS Production (Mnt),0.9294816311062752,0,1
+Year,Cummulative FAI growth (%),0.824942738829591,0,4
+Year,"ACSU 
+(Mnt)",0.9116656129884392,0,3
+Year,Stocks of iron ore at China's seaport (Mt.),0.8874582126513945,0,15
+Year,YTD Growth rate of  Investment  (Fixed asset investment),0.8129246743032154,0,23
+Year,Floor space under construction (y-o-y),0.8731880760757172,0,79
 "HRC 
 (FOB, $/t)",Domestic Scrap (DDP Jiangsu incl. VAT $/t),0.8404399515252701,0,0
 "HRC 
