@@ -204,8 +204,18 @@ cif = cfr + insurance
 customs_absolute = cif * customs_pct / 100
 sws = customs_absolute * 0.10
 landed_value = cif + customs_absolute + sws
-safeguard_duty_pct = st.number_input("Safeguard Duty (%)", value=0.0)
-safeguard_duty_abs = landed_value * safeguard_duty_pct / 100
+if not selected_row.empty and "China HRC (FOB, $/t) Forecast" in selected_row.columns:
+    china_val = selected_row["China HRC (FOB, $/t) Forecast"].values[0]
+    selected_china_fob = float(china_val) if pd.notna(china_val) else 0.0
+else:
+    selected_china_fob = 0.0
+
+if not selected_row.empty and "Japan HRC (FOB, $/t) Forecast" in selected_row.columns:
+    japan_val = selected_row["Japan HRC (FOB, $/t) Forecast"].values[0]
+    selected_japan_fob = float(japan_val) if pd.notna(japan_val) else 0.0
+else:
+    selected_japan_fob = 0.0
+
 port_price = landed_value + sgd + mip + safeguard_duty_abs
 mumbai_port_rs = port_price * exchange_rate
 mumbai_market_rs = mumbai_port_rs + freight_to_city
