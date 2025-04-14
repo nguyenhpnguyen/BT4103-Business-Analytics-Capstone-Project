@@ -1,17 +1,15 @@
-import os
 import pandas as pd 
 import streamlit as st
-
 from china_japan import generate_forecast
 
 # Set page config
-st.set_page_config(page_title="HRC Price Forecast Dashboard", layout="wide")
+st.set_page_config(page_title="HRC Price Forecasting Model Dashboard", layout="wide")
 
 # --- Custom Dashboard Title ---
 st.markdown("""
-    <div style='text-align: center; padding: 1rem 0; background-color: #0E539A; color: white; border-radius: 8px;'>
-        <h1 style='margin-bottom: 0.3rem;'>HRC Price Predict Model Dashboard</h1>
-        <p style='font-size: 18px;'>For TATA Steel | Forecasting & Landed Cost Analytics</p>
+    <div style='text-align: center; padding: 1rem 0; background-color: #0080C7; color: white; border-radius: 8px;'>
+        <h1 style='margin-bottom: 0.3rem;'>HRC Price Forecasting Model Dashboard</h1>
+        <p style='font-size: 18px;'>Forecasting HRC prices for China & Japan: Landed Price Determination in India for TATA Steel</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -20,19 +18,19 @@ st.sidebar.header("Model Parameters")
 
 # Upside Inputs
 st.sidebar.markdown("**Upside Adjustments**")
-up_iron_ore = st.sidebar.number_input("Iron Ore (Upside)", min_value=0, max_value=1000, value=100)
-up_hcc = st.sidebar.number_input("HCC (Upside)", min_value=0, max_value=1000, value=220)
-up_scrap = st.sidebar.number_input("Scrap (Upside)", min_value=0, max_value=1000, value=400)
-up_export = st.sidebar.number_input("Export (Upside)", min_value=0, max_value=100, value=9)
-up_fai = st.sidebar.number_input("FAI (Upside)", min_value=0, max_value=100, value=5)
+up_iron_ore = st.sidebar.number_input("Iron Ore (CFR, $/t) (Upside)", min_value=0, max_value=1000, value=100)
+up_hcc = st.sidebar.number_input("HCC (Aus FOB, $/t) (Upside)", min_value=0, max_value=1000, value=220)
+up_scrap = st.sidebar.number_input("Domestic Scrap (DDP Jiangsu incl. VAT $/t) (Upside)", min_value=0, max_value=1000, value=400)
+up_export = st.sidebar.number_input("Monthly Export of Semis & Finished Steel as % of Production (Upside)", min_value=0, max_value=100, value=9)
+up_fai = st.sidebar.number_input("FAI in urban real estate development (y-o-y) Growth (Upside)", min_value=0, max_value=100, value=5)
 
 # Downside Inputs
 st.sidebar.markdown("**Downside Adjustments**")
-down_iron_ore = st.sidebar.number_input("Iron Ore (Downside)", min_value=0, max_value=1000, value=85)
-down_hcc = st.sidebar.number_input("HCC (Downside)", min_value=0, max_value=1000, value=180)
-down_scrap = st.sidebar.number_input("Scrap (Downside)", min_value=0, max_value=1000, value=350)
-down_export = st.sidebar.number_input("Export (Downside)", min_value=-100, max_value=100, value=12)
-down_fai = st.sidebar.number_input("FAI (Downside)", min_value=-100, max_value=100, value=1)
+down_iron_ore = st.sidebar.number_input("Iron Ore (CFR, $/t) (Downside)", min_value=0, max_value=1000, value=85)
+down_hcc = st.sidebar.number_input("HCC (Aus FOB, $/t) (Downside)", min_value=0, max_value=1000, value=180)
+down_scrap = st.sidebar.number_input("Domestic Scrap (DDP Jiangsu incl. VAT $/t) (Downside)", min_value=0, max_value=1000, value=350)
+down_export = st.sidebar.number_input("Monthly Export of Semis & Finished Steel as % of Production (Downside)", min_value=-100, max_value=100, value=12)
+down_fai = st.sidebar.number_input("FAI in urban real estate development (y-o-y) Growth (Downside)", min_value=-100, max_value=100, value=1)
 
 months_ahead = st.sidebar.slider("Months ahead from 2024-10-01", min_value=6, max_value=30, value=17)
 
@@ -56,15 +54,16 @@ selected_date = st.selectbox("📅 Select Month for Landed Price Calculation", d
 # Convert selected date back to datetime to filter df
 selected_date_dt = pd.to_datetime(selected_date)
 
-# Display China's and Japan's forecasted HRC price
+# Obtain China's and Japan's forecasted HRC price
 CN_forecasted_value = CN_forecast.loc[selected_date_dt, 'HRC (FOB, $/t)_f']
 JP_forecasted_value = JP_forecast.loc[selected_date_dt, 'Japan HRC (FOB, $/t)_f']
 
 col1, col2 = st.columns(2)
 # --- India Landed Price (China) Calculator ---
 with col1:
-    st.subheader("India Landed Price from China")
+    st.subheader("Landed Price of China's HRC in India")
 
+    # Editable fields
     sea_freight = st.number_input("Sea Freight ($/t)", value=30, key=1)
     basic_customs_duty = st.number_input("Basic Customs Duty (%)", value=7.5, key=2)
     antidumping = st.number_input("Antidumping from 8th Aug'16 to 7th Aug'21 ($/t)", value=0, key=3)
@@ -117,12 +116,14 @@ with col1:
     st.dataframe(china_landed_price_modified, use_container_width=True)
     final_price = china_landed_price_modified["Price"]["HRC Basic Landed @ Mumbai Market (Rs/t)"]
 
-    st.markdown(f"<span style='color:#0E539A; font-weight:bold;'>India landed price from China is: ₹ {final_price:.2f}/t</span>", unsafe_allow_html=True)
+    # Display India landed price
+    st.markdown(f"<span style='color:#0080C7; font-weight:bold;'>The landed price of China's HRC in India is: ₹ {final_price:.2f}/t</span>", unsafe_allow_html=True)
 
-# --- India Landed Price (Japan/Korea) Calculator ---
+# --- India Landed Price (Japan) Calculator ---
 with col2:
-    st.subheader("India Landed Price from Japan")
+    st.subheader("Landed Price of Japan's HRC in India")
 
+    # Editable fields
     sea_freight_JP = st.number_input("Sea Freight ($/t)", value=30, key=11)
     basic_customs_duty_JP = st.number_input("Basic Customs Duty (%)", value=0, key=22)
     antidumping_JP = st.number_input("Antidumping from 8th Aug'16 to 7th Aug'21 ($/t)", value=0, key=33)
@@ -175,5 +176,6 @@ with col2:
     st.dataframe(japan_landed_price_modified, use_container_width=True)
     final_price_JP = japan_landed_price_modified["Price"]["HRC Basic Landed @ Mumbai Market (Rs/t)"]
 
-    st.markdown(f"<span style='color:#0E539A; font-weight:bold;'>India landed price from Japan is: ₹ {final_price_JP:.2f}/t</span>", unsafe_allow_html=True)
+    # Display India landed price
+    st.markdown(f"<span style='color:#0080C7; font-weight:bold;'>The landed price of Japan's HRC in India is: ₹ {final_price_JP:.2f}/t</span>", unsafe_allow_html=True)
     
