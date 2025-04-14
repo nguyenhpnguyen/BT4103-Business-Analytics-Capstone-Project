@@ -12,14 +12,9 @@ from statsmodels.tsa.api import VAR
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 from statsmodels.tsa.stattools import adfuller
-from statsmodels.stats.stattools import durbin_watson
-from statsmodels.tools.eval_measures import rmse, aic
 
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from pathlib import Path
 
 import warnings
@@ -51,7 +46,7 @@ def log_trans(df):
     return df_transformed
 
 # %%
-def generate_forecast(iron_ore_up, hcc_up, scrap_up, export_perc_up, fai_up, iron_ore_down, hcc_down, scrap_down, export_perc_down, fai_down, months_ahead, line_options):
+def generate_forecast(iron_ore_up, hcc_up, scrap_up, export_perc_up, fai_up, iron_ore_down, hcc_down, scrap_down, export_perc_down, fai_down, months_ahead, selected_countries):
     file_path = Path(__file__).resolve().parent.parent / "data" / "final" / "wo_na.csv"
     df = pd.read_csv(file_path)
     df.set_index('Date', inplace=True)
@@ -228,20 +223,20 @@ def generate_forecast(iron_ore_up, hcc_up, scrap_up, export_perc_up, fai_up, iro
     '''CHINA & JAPAN FORECAST'''
     # Plot forecast
     fig = go.Figure()
-    if "China" in line_options:
+    if "China" in selected_countries:
         fig.add_trace(go.Scatter(x=df.index, y=df["HRC (FOB, $/t)"], mode='lines', name="China's historical HRC", line=dict(color='black', dash='solid')))
-        fig.add_trace(go.Scatter(x=final_forecast.index, y=final_forecast["HRC (FOB, $/t)_f"], mode='lines', name="China's forecasted HRC", line=dict(color='red', dash='dot')))
+        fig.add_trace(go.Scatter(x=final_forecast.index, y=final_forecast["HRC (FOB, $/t)_f"], mode='lines', name="China's forecasted HRC", line=dict(color='red', dash='solid')))
         fig.add_trace(go.Scatter(x=forecast_period, y=CN_forecast_upside['China HRC (FOB, $/t)'], mode='lines', line=dict(width=0), name="Range China", showlegend=False))
         fig.add_trace(go.Scatter(x=forecast_period, y=CN_forecast_downside['China HRC (FOB, $/t)'], mode='lines', fill='tonexty', fillcolor='rgba(240, 128, 128, 0.2)',line=dict(width=0), name="Range China", showlegend=True))
     
-    if "Japan" in line_options:
+    if "Japan" in selected_countries:
         japan_historical = hrc_price_CN_JP[['Japan HRC (FOB, $/t)']].loc[hrc_price_CN_JP.index > '2006-08-01'].copy()
         fig.add_trace(go.Scatter(x=japan_historical.index, y=japan_historical["Japan HRC (FOB, $/t)"], mode='lines', name="Japan's historical HRC", line=dict(color='slategray', dash='solid')))
-        fig.add_trace(go.Scatter(x=df_forecast_JP.index, y=df_forecast_JP["Japan HRC (FOB, $/t)_f"], mode='lines', name="Japan's forecasted HRC", line=dict(color='teal', dash='dot')))
+        fig.add_trace(go.Scatter(x=df_forecast_JP.index, y=df_forecast_JP["Japan HRC (FOB, $/t)_f"], mode='lines', name="Japan's forecasted HRC", line=dict(color='teal', dash='solid')))
         fig.add_trace(go.Scatter(x=fc_period_JP, y=JP_forecast_upside['Japan HRC (FOB, $/t)'], mode='lines', line=dict(width=0), name="Range Japan", showlegend=False))
         fig.add_trace(go.Scatter(x=fc_period_JP, y=JP_forecast_downside['Japan HRC (FOB, $/t)'], mode='lines', fill='tonexty', fillcolor='rgba(152, 251, 152, 0.2)',line=dict(width=0), name="Range Japan", showlegend=True))
 
-    fig.update_layout(title="Forecasting of China's and Japan's HRC prices", xaxis_title='Date', yaxis_title='HRC (FOB, $/t)')
+    fig.update_layout(title="Forecasting China's and Japan's HRC prices", xaxis_title='Date', yaxis_title='HRC (FOB, $/t)')
     return fig, final_forecast, df_forecast_JP
 
 
