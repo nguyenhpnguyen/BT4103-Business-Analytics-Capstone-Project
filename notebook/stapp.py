@@ -117,7 +117,7 @@ with col1:
     final_price = china_landed_price_modified["Price"]["HRC Basic Landed @ Mumbai Market (Rs/t)"]
 
     # Display India landed price
-    st.markdown(f"<span style='color:#0080C7; font-weight:bold;'>The landed price of China's HRC in India is: ₹ {final_price:.2f}/t</span>", unsafe_allow_html=True)
+    st.markdown(f"<span style='color:#0080C7; font-weight:bold;'>The landed price of China's HRC in India is: ₹ {final_price:.0f}/t</span>", unsafe_allow_html=True)
 
 # --- India Landed Price (Japan) Calculator ---
 with col2:
@@ -177,5 +177,5 @@ with col2:
     final_price_JP = japan_landed_price_modified["Price"]["HRC Basic Landed @ Mumbai Market (Rs/t)"]
 
     # Display India landed price
-    st.markdown(f"<span style='color:#0080C7; font-weight:bold;'>The landed price of Japan's HRC in India is: ₹ {final_price_JP:.2f}/t</span>", unsafe_allow_html=True)
+    st.markdown(f"<span style='color:#0080C7; font-weight:bold;'>The landed price of Japan's HRC in India is: ₹ {final_price_JP:.0f}/t</span>", unsafe_allow_html=True)
     
