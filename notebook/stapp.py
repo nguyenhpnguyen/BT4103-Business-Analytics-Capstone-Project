@@ -48,6 +48,32 @@ st.plotly_chart(fig, use_container_width=True)
 # Obtain list of forecasted dates
 date_options = JP_forecast.index.strftime('%Y-%m-%d').tolist()
 
+# --- Export forecasted HRC price from graph to CSV ---
+# Combine China and Japan forecasts into a single dataframe
+export_df = pd.merge(CN_forecast, JP_forecast, on='Date', how='outer')
+export_df = export_df.rename(columns={
+    'Date': 'Month',
+    'HRC (FOB, $/t)_f': 'China HRC Price (FOB, $/t)',
+    'Japan HRC (FOB, $/t)_f': 'Japan HRC Price (FOB, $/t)'
+})
+export_df = export_df.fillna('No data')
+
+# Format Date column to MMM-YY
+export_df.index = export_df.index.strftime('%b-%y')
+
+# Convert dataframe to CSV
+csv_bytes = export_df.to_csv(index=True).encode("utf-8")
+
+# Download button
+st.download_button(
+        label="📥 Download Forecast Values as CSV",
+        data=csv_bytes,
+        file_name="hrc_forecast.csv",
+        mime="text/csv"
+)
+st.markdown("<div style='margin-bottom: 1rem;'></div>", unsafe_allow_html=True)
+
+
 # Dropdown for date selection
 selected_date = st.selectbox("📅 Select Month for Landed Price Calculation", date_options)
 
