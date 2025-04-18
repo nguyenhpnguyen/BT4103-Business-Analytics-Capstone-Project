@@ -38,7 +38,7 @@ def log_trans(df):
     return df_transformed
 
 # %%
-def generate_forecast(iron_ore_up, hcc_up, scrap_up, export_perc_up, fai_up, iron_ore_down, hcc_down, scrap_down, export_perc_down, fai_down, months_ahead, selected_countries):
+def generate_forecast(iron_ore_up, hcc_up, scrap_up, export_perc_up, fai_up, iron_ore_down, hcc_down, scrap_down, export_perc_down, fai_down, selected_countries):
     file_path = Path(__file__).resolve().parent.parent / "data" / "final" / "wo_na.csv"
     df = pd.read_csv(file_path)
     df.set_index('Date', inplace=True)
@@ -72,8 +72,8 @@ def generate_forecast(iron_ore_up, hcc_up, scrap_up, export_perc_up, fai_up, iro
     forecast_input = final_df_differenced.values[-lag_order:]
 
     # Forecast the following periods
-    fc = model_fitted.forecast(y=forecast_input, steps=months_ahead)
-    fc_period = pd.date_range(start='11/1/2024', periods=months_ahead, freq='MS')
+    fc = model_fitted.forecast(y=forecast_input, steps=17)
+    fc_period = pd.date_range(start='11/1/2024', periods=17, freq='MS')
     df_forecast = pd.DataFrame(fc, index=fc_period, columns=final_df.columns + '_1d')
     df_forecast.index.name = 'Date'
 
@@ -114,7 +114,7 @@ def generate_forecast(iron_ore_up, hcc_up, scrap_up, export_perc_up, fai_up, iro
     y_forecast = lr_model.predict(forecasted_X_transformed)
     y_forecast_new = np.insert(y_forecast, 0, df['HRC (FOB, $/t)'][-1])
 
-    forecast_period = pd.date_range(start=df.index[-1], periods=months_ahead+1, freq='MS')
+    forecast_period = pd.date_range(start=df.index[-1], periods=18, freq='MS')
     final_forecast = pd.DataFrame(y_forecast_new, index=forecast_period, columns=['HRC (FOB, $/t)_f'])
     final_forecast.index.name = 'Date'
 
@@ -144,7 +144,7 @@ def generate_forecast(iron_ore_up, hcc_up, scrap_up, export_perc_up, fai_up, iro
           up_down_f = lr_model.predict(up_down_transformed)
           up_down_f_new = np.insert(up_down_f, 0, df['HRC (FOB, $/t)'][-1])
 
-          fc_dates = pd.date_range(start=df.index[-1], periods=months_ahead+1, freq='MS')
+          fc_dates = pd.date_range(start=df.index[-1], periods=18, freq='MS')
           up_down_forecast = pd.DataFrame(up_down_f_new, index=fc_dates, columns=['China HRC (FOB, $/t)'])
           up_down_forecast.index.name = 'Date'
           return up_down_forecast
