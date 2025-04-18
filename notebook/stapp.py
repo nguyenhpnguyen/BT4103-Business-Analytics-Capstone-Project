@@ -32,8 +32,7 @@ down_scrap = st.sidebar.number_input("Domestic Scrap (DDP Jiangsu incl. VAT $/t)
 down_export = st.sidebar.number_input("Monthly Export of Semis & Finished Steel as % of Production (Downside)", min_value=-100, max_value=100, value=12)
 down_fai = st.sidebar.number_input("FAI in urban real estate development (y-o-y) Growth (Downside)", min_value=-100, max_value=100, value=1)
 
-months_ahead = st.sidebar.slider("Months ahead from 2024-10-01", min_value=6, max_value=30, value=17)
-
+# Select countries to be displayed
 st.sidebar.markdown("**Country Selection**")
 selected_countries = st.sidebar.multiselect(
     "Select country to view:",
@@ -42,8 +41,36 @@ selected_countries = st.sidebar.multiselect(
 )
 
 # Plot graph
-fig, CN_forecast, JP_forecast = generate_forecast(up_iron_ore, up_hcc, up_scrap, up_export, up_fai, down_iron_ore, down_hcc, down_scrap, down_export, down_fai, months_ahead, selected_countries)
+fig, CN_forecast, JP_forecast = generate_forecast(up_iron_ore, up_hcc, up_scrap, up_export, up_fai, down_iron_ore, down_hcc, down_scrap, down_export, down_fai, selected_countries)
 st.plotly_chart(fig, use_container_width=True)
+
+# Download China's and Japan's forecasted HRC prices
+@st.cache_data
+def convert_df(df):
+    return df.to_csv(index=True).encode('utf-8')
+
+CN_forecast_csv = convert_df(CN_forecast)
+JP_forecast_csv = convert_df(JP_forecast)
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.download_button(
+        label="📥 Download China's forecasted prices as CSV",
+        data=CN_forecast_csv,
+        file_name="china_hrc_forecast.csv",
+        mime="text/csv",
+        key='download-china-forecast-csv'
+    )
+
+with col2:
+    st.download_button(
+        label="📥 Download Japan's forecasted prices as CSV",
+        data=JP_forecast_csv,
+        file_name="japan_hrc_forecast.csv",
+        mime="text/csv",
+        key='download-japan-forecast-csv'
+    )
 
 # Obtain list of forecasted dates
 date_options = JP_forecast.index.strftime('%Y-%m-%d').tolist()
