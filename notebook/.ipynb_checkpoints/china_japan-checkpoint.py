@@ -5,10 +5,18 @@
 # Import libraries
 import numpy as np 
 import pandas as pd 
+import seaborn as sns
+
+import statsmodels.api as sm
 from statsmodels.tsa.api import VAR
+import matplotlib.pyplot as plt
 import plotly.graph_objects as go
+from statsmodels.tsa.stattools import adfuller
+
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
 from pathlib import Path
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -38,7 +46,7 @@ def log_trans(df):
     return df_transformed
 
 # %%
-def generate_forecast(iron_ore_up, hcc_up, scrap_up, export_perc_up, fai_up, iron_ore_down, hcc_down, scrap_down, export_perc_down, fai_down, selected_countries):
+def generate_forecast(iron_ore_up, hcc_up, scrap_up, export_perc_up, fai_up, iron_ore_down, hcc_down, scrap_down, export_perc_down, fai_down, months_ahead, selected_countries):
     file_path = Path(__file__).resolve().parent.parent / "data" / "final" / "wo_na.csv"
     df = pd.read_csv(file_path)
     df.set_index('Date', inplace=True)
@@ -67,13 +75,13 @@ def generate_forecast(iron_ore_up, hcc_up, scrap_up, export_perc_up, fai_up, iro
     # Fit model with optimal lag
     model_fitted = var_model.fit(4)
 
-    # Using the last 4 observations (since lag order is 4) to forecast the following periods
+    # Using the last _ observations (since lag order is _) to forecast the following periods
     lag_order = model_fitted.k_ar
     forecast_input = final_df_differenced.values[-lag_order:]
 
     # Forecast the following periods
-    fc = model_fitted.forecast(y=forecast_input, steps=17)
-    fc_period = pd.date_range(start='11/1/2024', periods=17, freq='MS')
+    fc = model_fitted.forecast(y=forecast_input, steps=months_ahead)
+    fc_period = pd.date_range(start='11/1/2024', periods=months_ahead, freq='MS')
     df_forecast = pd.DataFrame(fc, index=fc_period, columns=final_df.columns + '_1d')
     df_forecast.index.name = 'Date'
 
@@ -101,7 +109,7 @@ def generate_forecast(iron_ore_up, hcc_up, scrap_up, export_perc_up, fai_up, iro
          'Automobile Production (y-o-y)_forecast', 'Civil Metal-Vessels/Steel Ships (y-o-y)_forecast',
          'Household Fridges (y-o-y)_forecast', 'Air Conditioner (y-o-y)_forecast']].copy()
     
-    # Log transform var predictions
+    # Scale var predictions
     forecasted_X.rename(columns={'Iron Ore (CFR, $/t)_forecast':'Iron Ore (CFR, $/t)', 'HCC (Aus FOB, $/t)_forecast':'HCC (Aus FOB, $/t)',
          'Domestic Scrap (DDP Jiangsu incl. VAT $/t)_forecast':'Domestic Scrap (DDP Jiangsu incl. VAT $/t)',
          'Monthly Export of Semis & Finished Steel as % of Production_forecast':'Monthly Export of Semis & Finished Steel as % of Production',
@@ -114,7 +122,7 @@ def generate_forecast(iron_ore_up, hcc_up, scrap_up, export_perc_up, fai_up, iro
     y_forecast = lr_model.predict(forecasted_X_transformed)
     y_forecast_new = np.insert(y_forecast, 0, df['HRC (FOB, $/t)'][-1])
 
-    forecast_period = pd.date_range(start=df.index[-1], periods=18, freq='MS')
+    forecast_period = pd.date_range(start=df.index[-1], periods=months_ahead+1, freq='MS')
     final_forecast = pd.DataFrame(y_forecast_new, index=forecast_period, columns=['HRC (FOB, $/t)_f'])
     final_forecast.index.name = 'Date'
 
@@ -144,7 +152,7 @@ def generate_forecast(iron_ore_up, hcc_up, scrap_up, export_perc_up, fai_up, iro
           up_down_f = lr_model.predict(up_down_transformed)
           up_down_f_new = np.insert(up_down_f, 0, df['HRC (FOB, $/t)'][-1])
 
-          fc_dates = pd.date_range(start=df.index[-1], periods=18, freq='MS')
+          fc_dates = pd.date_range(start=df.index[-1], periods=months_ahead+1, freq='MS')
           up_down_forecast = pd.DataFrame(up_down_f_new, index=fc_dates, columns=['China HRC (FOB, $/t)'])
           up_down_forecast.index.name = 'Date'
           return up_down_forecast
@@ -166,17 +174,25 @@ def generate_forecast(iron_ore_up, hcc_up, scrap_up, export_perc_up, fai_up, iro
     X_JP = hrc_price_CN_JP[["China HRC (FOB, $/t)"]]
     y_JP = hrc_price_CN_JP["Japan HRC (FOB, $/t)"]
 
-    # Train the model
-    model_JP = LinearRegression()
-    model_JP_fitted = model_JP.fit(X_JP, y_JP)
+    # Working with second degree polynomial
+    poly = PolynomialFeatures(degree=2, include_bias=False)
 
-    # Obtain China's HRC prices that will be used for predictions
+    # Transform training data for model testing
+    X_poly = poly.fit_transform(X_JP)  # Fit and transform for training
+
+    # Train the model using transformed training data
+    model_poly = LinearRegression()
+    model_poly_fitted = model_poly.fit(X_poly, y_JP)
+
+    # Use the trained model for prediction
+    # 1. Obtain x (China's HRC price with polynomial features)
     x_CN = final_forecast[['HRC (FOB, $/t)_f']].loc[final_forecast.index > '2025-01-01'].copy()
     nobs = len(x_CN) + 1
     x_CN.rename(columns={'HRC (FOB, $/t)_f':'China HRC (FOB, $/t)'}, inplace=True)
+    x_CN_poly_trans = poly.transform(x_CN) # transform China's HRC price to achieve polinomial features with degree=2
     
-    # Obtain forecasted Japan's HRC prices
-    y_JP_forecast = model_JP_fitted.predict(x_CN)
+    # 2. Obtain y forecast (Japan's HRC price)
+    y_JP_forecast = model_poly_fitted.predict(x_CN_poly_trans)
     y_JP_forecast_new = np.insert(y_JP_forecast, 0, hrc_price_CN_JP['Japan HRC (FOB, $/t)'].loc['2025-01-01'])
     fc_period_JP = pd.date_range(start='2025-01-01', periods=nobs, freq='MS')
     df_forecast_JP = pd.DataFrame(y_JP_forecast_new, index=fc_period_JP, columns=['Japan HRC (FOB, $/t)_f'])
@@ -187,8 +203,11 @@ def generate_forecast(iron_ore_up, hcc_up, scrap_up, export_perc_up, fai_up, iro
           # obtain China's upside/downside forecast and filter for Japan's forecast period
           china_forecast = CN_upside_downside[['China HRC (FOB, $/t)']].loc[CN_upside_downside.index > '2025-01-01'].copy()
 
+          # polynomial transformation on China's upside/downside forecast
+          china_forecast_poly_trans = poly.transform(china_forecast)
+
           # obtain Japan's upside/downside forecast
-          japan_forecast = model_JP_fitted.predict(china_forecast)
+          japan_forecast = model_poly_fitted.predict(china_forecast_poly_trans)
           japan_forecast_new = np.insert(japan_forecast, 0, hrc_price_CN_JP['Japan HRC (FOB, $/t)'].loc['2025-01-01'])
           fc_dates_JP = pd.date_range(start='2025-01-01', periods=nobs, freq='MS')
           JP_up_down_forecast = pd.DataFrame(japan_forecast_new, index=fc_dates_JP, columns=['Japan HRC (FOB, $/t)'])
