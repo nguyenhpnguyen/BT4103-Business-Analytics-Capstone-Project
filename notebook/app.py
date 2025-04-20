@@ -40,50 +40,31 @@ selected_countries = st.sidebar.multiselect(
     default=["China", "Japan"]
 )
 
-# Plot graph
-fig, CN_forecast, JP_forecast = generate_forecast(up_iron_ore, up_hcc, up_scrap, up_export, up_fai, down_iron_ore, down_hcc, down_scrap, down_export, down_fai, selected_countries)
+# --- Plot graph ---
+fig, CN_JP_forecast = generate_forecast(up_iron_ore, up_hcc, up_scrap, up_export, up_fai, down_iron_ore, down_hcc, down_scrap, down_export, down_fai, selected_countries)
 st.plotly_chart(fig, use_container_width=True)
 
-# Download China's and Japan's forecasted HRC prices
-@st.cache_data
-def convert_df(df):
-    return df.to_csv(index=True).encode('utf-8')
-
-CN_forecast_csv = convert_df(CN_forecast)
-JP_forecast_csv = convert_df(JP_forecast)
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.download_button(
-        label="📥 Download China's forecasted prices as CSV",
-        data=CN_forecast_csv,
-        file_name="china_hrc_forecast.csv",
-        mime="text/csv",
-        key='download-china-forecast-csv'
-    )
-
-with col2:
-    st.download_button(
-        label="📥 Download Japan's forecasted prices as CSV",
-        data=JP_forecast_csv,
-        file_name="japan_hrc_forecast.csv",
-        mime="text/csv",
-        key='download-japan-forecast-csv'
-    )
+# --- Export China's and Japan's forecasted HRC prices as csv ---
+CN_JP_forecast_csv = CN_JP_forecast.to_csv(index=True).encode("utf-8")
+ 
+# Download button
+st.download_button(
+    label="📥 Download China's and Japan's forecasted HRC prices as CSV",
+    data=CN_JP_forecast_csv,
+    file_name="hrc_forecast.csv",
+    mime="text/csv"
+)
+st.markdown("<div style='margin-bottom: 1rem;'></div>", unsafe_allow_html=True)
 
 # Obtain list of forecasted dates
-date_options = JP_forecast.index.strftime('%Y-%m-%d').tolist()
+date_options = CN_JP_forecast.index.tolist()
 
 # Dropdown for date selection
 selected_date = st.selectbox("📅 Select Month for Landed Price Calculation", date_options)
 
-# Convert selected date back to datetime to filter df
-selected_date_dt = pd.to_datetime(selected_date)
-
 # Obtain China's and Japan's forecasted HRC price
-CN_forecasted_value = CN_forecast.loc[selected_date_dt, 'HRC (FOB, $/t)_f']
-JP_forecasted_value = JP_forecast.loc[selected_date_dt, 'Japan HRC (FOB, $/t)_f']
+CN_forecasted_value = CN_JP_forecast.loc[selected_date, 'China HRC Forecast (FOB, $/t)']
+JP_forecasted_value = CN_JP_forecast.loc[selected_date, 'Japan HRC Forecast (FOB, $/t)']
 
 col1, col2 = st.columns(2)
 # --- India Landed Price (China) Calculator ---
@@ -162,7 +143,7 @@ with col2:
     freight_port_city_JP = st.number_input("Freight (from port to city) (Rs/t)", value=500, key=99)
 
     japan_landed_price = pd.DataFrame({
-        "HRC FOB China ($/t)": [JP_forecasted_value],
+        "HRC FOB Japan ($/t)": [JP_forecasted_value],
         "Sea Freight ($/t)": [sea_freight_JP],
         "HRC CFR at Mumbai Port (A) ($/t)": [0],
         "Insurance @1% on CFR ($/t)": [0],
@@ -185,7 +166,7 @@ with col2:
     })
 
     # Recalculate rows that are dependent on other rows
-    japan_landed_price["HRC CFR at Mumbai Port (A) ($/t)"] = japan_landed_price["HRC FOB China ($/t)"] + japan_landed_price["Sea Freight ($/t)"]
+    japan_landed_price["HRC CFR at Mumbai Port (A) ($/t)"] = japan_landed_price["HRC FOB Japan ($/t)"] + japan_landed_price["Sea Freight ($/t)"]
     japan_landed_price["Insurance @1% on CFR ($/t)"] = japan_landed_price["HRC CFR at Mumbai Port (A) ($/t)"] * 0.01
     japan_landed_price["CIF / Assessable Value ($/t)"] = japan_landed_price["Insurance @1% on CFR ($/t)"] + japan_landed_price["HRC CFR at Mumbai Port (A) ($/t)"]
     japan_landed_price["Basic Customs Duty (Absolute) ($/t)"] = japan_landed_price["CIF / Assessable Value ($/t)"] * (japan_landed_price["Basic Customs Duty (%)"]/100)
