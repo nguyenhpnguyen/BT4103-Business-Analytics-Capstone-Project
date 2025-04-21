@@ -11,7 +11,7 @@ valuable insights for pricing strategies and competitive positioning in the mark
 In order to reproduce the forecasting results and generate the corresponding dashboard, the user may follow the steps outlined below. These instructions assume that the user has a basic Python environment setup.
 
 1. Create and activate a virtual environment
-2. Install required libraries using `pip install - r requirements.txt`
+2. Install required libraries using `pip install -r requirements.txt`
 3. Navigate to the `notebook` folder and enter the following command: `streamlit run app.py` in the terminal
 
 
